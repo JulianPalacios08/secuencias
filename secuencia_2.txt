@@ -1,0 +1,84 @@
+#include p16f887.inc
+
+; CONFIG1
+; __config 0x28D5
+__CONFIG _CONFIG1, _FOSC_INTRC_CLKOUT & _WDTE_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _CPD_OFF & _BOREN_OFF & _IESO_OFF & _FCMEN_ON & _LVP_OFF
+; CONFIG2
+; __config 0x3FFF
+__CONFIG _CONFIG2, _BOR4V_BOR40V & _WRT_OFF
+
+
+LIST p=16F887
+N EQU 0xE0
+
+; Definición de registros
+i EQU 0x23
+j EQU 0x24
+cont1 EQU 0x20
+cont2 EQU 0x21
+MUESTRA EQU 0x22
+
+ORG 0x00
+GOTO INICIO
+
+INICIO
+BCF STATUS, RP0 ; RP0 = 0
+BCF STATUS, RP1 ; RP1 = 0
+CLRF PORTA ; PORTA = 0
+CLRF PORTB ; PORTB = 0
+BSF STATUS, RP0 ; RP0 = 1
+CLRF TRISA
+CLRF TRISB ; Configura PORTB como salida
+BCF STATUS, RP0 ; RP0 = 0
+
+SECUENCIA
+CLRF MUESTRA; Se limpia donde se van a mostrar los datos
+MOVLW 0x01 ; Carga el valor inicial para la secuencia ascendente
+MOVWF i
+IORWF MUESTRA,1 ; se agrega i a Muestra
+MOVLW 0x80 ; Carga el valor inicial para la secuencia descendente
+MOVWF j
+IORWF MUESTRA,1 ; se agrega j a Muestra
+MOVFW MUESTRA ; se mueve muestra a w
+MOVWF PORTB ; muestra lo que tiene muestra
+CALL RETARDO
+CALL RETARDO
+LOOP
+RLF i; Incrementa i
+RRF j; Decrementa j
+RRF j
+
+
+CLRF MUESTRA ; se limpea muestra
+MOVFW i ; Mueve i a W
+IORWF MUESTRA,1
+MOVFW j ; Mueve j a W
+IORWF MUESTRA,1
+MOVFW MUESTRA
+MOVWF PORTB ; Enciende los LEDs según el valor de j
+BTFSC j, 1 ; Si el bit 1 es 1 se limpia por completo;
+CLRF j
+
+CALL RETARDO
+CALL RETARDO
+BTFSC MUESTRA, 7 ; Si el bit 7 es 1 se devuelve al inicio;
+GOTO SECUENCIA
+GOTO LOOP
+
+
+RETARDO
+MOVLW N
+MOVWF cont1
+
+REP_1
+MOVLW N
+MOVWF cont2
+
+REP_2
+DECFSZ cont2,1
+GOTO REP_2
+DECFSZ cont1,1
+GOTO REP_1
+RETURN
+
+END
